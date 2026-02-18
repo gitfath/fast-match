@@ -1,0 +1,169 @@
+/*
+* Test de l'arrière-plan responsive
+* Ouvrez ce fichier dans votre navigateur pour voir les différentes tailles d'écran
+*/
+
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Arrière-plan Responsive - Fast Match</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            height: 100%;
+        }
+
+        body {
+            min-height: 100vh;
+            min-height: 100dvh;
+            /* Dégradé de secours */
+            background: linear-gradient(135deg,
+                    #667eea 0%,
+                    #764ba2 25%,
+                    #f093fb 50%,
+                    #f5576c 75%,
+                    #ffa726 100%);
+            /* Overlay + image */
+            background-image:
+                linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(246, 87, 108, 0.8) 100%),
+                url('/images/background.jpg.png');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Arial', sans-serif;
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            body {
+                background-attachment: scroll;
+            }
+        }
+
+        .test-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 3rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            margin: 2rem;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 2rem;
+        }
+
+        .status {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: #f0f9ff;
+            border-left: 4px solid #667eea;
+            border-radius: 8px;
+        }
+
+        .status-item {
+            margin: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .check {
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .info {
+            color: #667eea;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #fef3c7;
+            border-radius: 8px;
+        }
+
+        .screen-size {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f3f4f6;
+            border-radius: 8px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="test-card">
+        <h1>✅ Test Arrière-plan</h1>
+
+        <div class="status">
+            <div class="status-item">
+                <span class="check">✓</span>
+                <span>Dégradé de secours actif</span>
+            </div>
+            <div class="status-item">
+                <span class="check">✓</span>
+                <span>Position centrée</span>
+            </div>
+            <div class="status-item">
+                <span class="check">✓</span>
+                <span>Responsive activé</span>
+            </div>
+            <div class="status-item">
+                <span class="check">✓</span>
+                <span>Overlay coloré appliqué</span>
+            </div>
+        </div>
+
+        <div class="screen-size">
+            <strong>Taille de l'écran:</strong><br>
+            <span id="screen-info">Chargement...</span>
+        </div>
+
+        <div class="info">
+            <strong>💡 Info:</strong> Si vous voyez un dégradé violet-rose-orange, c'est normal !
+            L'image de fond sera visible quand vous ajouterez <code>background.jpg.png</code>
+            dans <code>/public/images/</code>
+        </div>
+    </div>
+
+    <script>
+        function updateScreenInfo() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            let device = '';
+
+            if (width < 768) {
+                device = '📱 Mobile';
+            } else if (width < 1024) {
+                device = '📱 Tablette';
+            } else if (width < 2000) {
+                device = '💻 Desktop';
+            } else {
+                device = '🖥️ Ultra-wide';
+            }
+
+            document.getElementById('screen-info').innerHTML =
+                `${width}px × ${height}px<br>${device}`;
+        }
+
+        updateScreenInfo();
+        window.addEventListener('resize', updateScreenInfo);
+    </script>
+</body>
+
+</html>

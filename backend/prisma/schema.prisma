@@ -1,0 +1,340 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String?  @unique
+  phone         String?  @unique
+  password      String
+  referralCode  String?  @unique
+  referredById  String?
+  referredBy    User?    @relation("Referrals", fields: [referredById], references: [id])
+  referrals     User[]   @relation("Referrals")
+  createdAt     DateTime @default(now())
+  profile       Profile?
+  likesSent     Like[]   @relation("LikesSent")
+  likesRec      Like[]   @relation("LikesReceived")
+  matches       Match[]  @relation("UserMatches")
+  wallet        Wallet?
+  bookings      Booking[]
+  payments      Payment[]
+  role          String   @default("MEMBER") // MEMBER, PARTNER, ADMIN
+  business      Business?
+  
+  reportsSent   Report[]   @relation("ReportedBy")
+  reportsRec    Report[]   @relation("ReportedUser")
+  sanctions     Sanction[]
+  sanctionsMade Sanction[] @relation("AdminSanctions")
+  tickets       SupportTicket[]
+}
+
+
+model Wallet {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  balanceFCFA   Float    @default(0)
+  balancePoints Int      @default(0)
+  transactions  Transaction[]
+  updatedAt     DateTime @updatedAt
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  walletId    String
+  wallet      Wallet   @relation(fields: [walletId], references: [id])
+  amount      Float
+  currency    String   // "FCFA" or "POINTS"
+  type        String   // "EARN", "REDEEM", "WITHDRAW", "REFERRAL"
+  description String
+  status      String   @default("COMPLETED") // PENDING, COMPLETED, FAILED
+  reference   String?  @unique
+  createdAt   DateTime @default(now())
+}
+
+model Business {
+  id            String   @id @default(uuid())
+  name          String
+  type          String   // Restaurant, Bar, Cinema, etc.
+  address       String
+  city          String?
+  neighborhood  String?
+  mapsUrl       String?
+  latitude      Float?
+  longitude     Float?
+  phone         String
+  email         String   @unique
+  openingHours  String?
+  cashbackRate  Float    @default(0)
+  description   String?
+  photos        String?  // JSON array of strings
+  verified      Boolean  @default(false)
+  bookings      Booking[]
+  ownerId       String   @unique
+  owner         User     @relation(fields: [ownerId], references: [id])
+  createdAt     DateTime @default(now())
+}
+
+model Booking {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  businessId      String
+  business        Business @relation(fields: [businessId], references: [id])
+  matchId         String?
+  match           Match?   @relation(fields: [matchId], references: [id])
+  date            DateTime
+  numPeople       Int      @default(2)
+  estimatedAmount Float?
+  cashbackAmount  Float?
+  status          String   @default("PENDING") // PENDING, CONFIRMED, COMPLETED, CANCELLED
+  message         String?
+  createdAt       DateTime @default(now())
+}
+
+model Profile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  
+  // 1️⃣ IDENTITÉ DE BASE
+  name      String
+  pseudo    String?
+  birthDate DateTime? // Pour calcul précis de l'âge
+  age       Int
+  gender    String   // Homme, Femme, Non-binaire, Transgenre homme, Transgenre femme, Autre, Préfère ne pas dire
+  orientation String? // Hétérosexuel(le), Homosexualité, Bisexuel(le), Pansexuel(le), Asexuel(le), Questionnement, Autre, Préfère ne pas dire
+  languages String?  // JSON array: ["Français", "Éwé", "Kabyè", etc.]
+  
+  // 2️⃣ LOCALISATION
+  country   String?  // Togo, Autre pays africain, Europe, Amérique, Autre
+  city      String?  // Lomé, Kara, Sokodé, Atakpamé, Dapaong, Autre
+  location     String?  // Coordonnées ou adresse générale
+  neighborhood String?  // Quartier (Texte libre)
+  mobility  String?  // Fixe, Mobile occasionnel, Très mobile, Voyage souvent
+  
+  // 3️⃣ OBJECTIF DE RENCONTRE
+  relationshipGoal String? // Sérieuse, Mariage, Amicale, Occasionnelle, Flirt, Discussion seulement, Je ne sais pas encore
+  openToDistance   String? // Oui, Non, Peut-être
+  
+  // 4️⃣ PERSONNALITÉ
+  personalityType String? // Introverti(e), Extraverti(e), Ambiverti(e)
+  temperament     String? // Calme, Énergique, Passionné(e), Réservé(e), Sociable, Leader, Créatif(ve)
+  humorImportance String? // Très important, Important, Peu important, Pas important
+  
+  // 5️⃣ CENTRES D'INTÉRÊT
+  interests Interest[]
+  
+  // 6️⃣ SITUATION PERSONNELLE
+  relationshipStatus String? // Célibataire, En couple, Séparé(e), Divorcé(e), Veuf/Veuve
+  children           String? // Aucun, 1, 2, 3+, Préfère ne pas dire
+  wantsChildren      String? // Oui, Non, Peut-être, Plus tard
+  
+  // 7️⃣ ÉTUDES & TRAVAIL
+  educationLevel String? // Aucun, Primaire, Collège, Lycée, Universitaire, Master, Doctorat
+  profession     String? // Texte libre
+  jobStatus      String? // Étudiant(e), Salarié(e), Entrepreneur(e), Fonctionnaire, Sans emploi, Freelance, Autre
+  
+  // 8️⃣ RELIGION & VALEURS
+  religion         String? // Chrétien(ne), Musulman(e), Traditionnelle, Autre, Aucune, Préfère ne pas dire
+  religiousPractice String? // Pas pratiquant(e), Peu pratiquant(e), Pratiquant(e), Très pratiquant(e)
+  values           String? // JSON array: ["Famille", "Respect", "Fidélité", etc.]
+  
+  // 9️⃣ APPARENCE PHYSIQUE
+  height      String? // < 1m60, 1m60 – 1m70, 1m70 – 1m80, > 1m80
+  bodyType    String? // Mince, Moyenne, Athlétique, Ronde, Forte
+  style       String? // Classique, Moderne, Sport, Traditionnel, Chic, Décontracté
+  
+  // 🔟 HABITUDES
+  smoking     String? // Non, Occasionnel, Régulier
+  drinking    String? // Jamais, Occasionnel, Régulier
+  sports      String? // Jamais, Parfois, Régulièrement
+  goingOut    String? // Rarement, Parfois, Souvent
+  
+  // 🔐 CONFIDENTIALITÉ
+  profileVisibility String? @default("Public") // Public, Privé, Visible aux matchs seulement
+  messageSettings   String? @default("Matchs seulement") // Tout le monde, Matchs seulement, Personne
+  
+  // 🛡️ SÉCURITÉ & STATUT
+  verified       Boolean  @default(false)
+  phoneVerified  Boolean  @default(false)
+  idVerified     Boolean  @default(false)
+  accountStatus  String   @default("Actif") // Actif, Suspendu, Banni, En révision
+  
+  // 📊 DONNÉES ALGORITHMIQUES
+  activityLevel String   @default("Nouveau") // Nouveau, Actif, Très actif, Inactif
+  isPremium     Boolean  @default(false)
+  isBoosted     Boolean  @default(false)
+  
+  // Autres
+  bio         String?
+  photos      Photo[]
+  contactInfo String?
+  preferences Preference?
+  updatedAt   DateTime @updatedAt
+}
+
+model Preference {
+  id          String   @id @default(uuid())
+  profileId   String   @unique
+  profile     Profile  @relation(fields: [profileId], references: [id])
+  
+  // Préférences de base
+  minAge      Int      @default(18)
+  maxAge      Int      @default(50)
+  gender      String?  // Homme, Femme, Tout, Non-binaire, etc.
+  
+  // 2️⃣ LOCALISATION
+  distance    Int      @default(50) // km: 1, 5, 10, 25, 50, 100, Sans limite
+  preferredCities String? // JSON array
+  
+  // 3️⃣ OBJECTIF DE RENCONTRE
+  relationshipGoal String? // Sérieuse, Mariage, Amicale, etc.
+  openToDistance   String? // Oui, Non, Peut-être
+  
+  // 4️⃣ PERSONNALITÉ
+  personalityType String? // Introverti(e), Extraverti(e), Ambiverti(e), Tout
+  temperament     String? // JSON array ou texte
+  
+  // 6️⃣ SITUATION PERSONNELLE
+  relationshipStatus String? // Célibataire uniquement, Tout
+  children           String? // Aucun, Avec enfants, Tout
+  wantsChildren      String? // Oui, Non, Peut-être, Tout
+  
+  // 7️⃣ ÉTUDES & TRAVAIL
+  minEducationLevel String? // Niveau minimum souhaité
+  jobStatus         String? // JSON array ou texte
+  
+  // 8️⃣ RELIGION & VALEURS
+  religion          String? // Même religion, Tout
+  religiousPractice String? // Niveau de pratique souhaité
+  importantValues   String? // JSON array
+  
+  // 9️⃣ APPARENCE PHYSIQUE
+  heightRange String? // Plage de taille souhaitée
+  bodyType    String? // JSON array ou texte
+  
+  // 🔟 HABITUDES
+  smoking  String? // Non fumeur uniquement, Tout
+  drinking String? // Préférence alcool
+  sports   String? // Sportif, Tout
+}
+
+model Photo {
+  id        String   @id @default(uuid())
+  url       String
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id])
+}
+
+model Interest {
+  id        String   @id @default(uuid())
+  name      String   // Musique, Sport, Danse, Voyage, Lecture, Cinéma, Cuisine, etc.
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id])
+}
+
+model Like {
+  id         String   @id @default(uuid())
+  fromUserId String
+  toUserId   String
+  liked      Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  fromUser   User     @relation("LikesSent", fields: [fromUserId], references: [id])
+  toUser     User     @relation("LikesReceived", fields: [toUserId], references: [id])
+
+  @@unique([fromUserId, toUserId])
+}
+
+model Match {
+  id        String   @id @default(uuid())
+  users     User[]   @relation("UserMatches")
+  createdAt DateTime @default(now())
+  messages  Message[]
+  bookings  Booking[]
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  matchId   String
+  match     Match    @relation(fields: [matchId], references: [id])
+  senderId  String
+  content   String
+  status    String   @default("SENT") // PENDING, SENT, DELIVERED, READ
+  type      String   @default("text") // text, image, audio
+  createdAt DateTime @default(now())
+}
+
+model Payment {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  amount      Float
+  status      String   // PENDING, COMPLETED, FAILED, REFUNDED
+  provider    String   // TMONEY, MOOV, STRIPE
+  reference   String?  @unique
+  description String?
+  createdAt   DateTime @default(now())
+}
+
+model Report {
+  id              String   @id @default(uuid())
+  reporterId      String
+  reportedId      String
+  reason          String
+  description     String?
+  status          String   @default("PENDING") // PENDING, RESOLVED, DISMISSED
+  urgency         String   @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  contentSnapshot String?  // Optional snapshot of the reported content
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  reporter        User     @relation("ReportedBy", fields: [reporterId], references: [id])
+  reported        User     @relation("ReportedUser", fields: [reportedId], references: [id])
+}
+
+model Sanction {
+  id            String   @id @default(uuid())
+  userId        String
+  adminId       String
+  type          String   // WARNING, SUSPENSION, BAN, LEGAL
+  reason        String
+  expiresAt     DateTime?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  
+  user          User     @relation(fields: [userId], references: [id])
+  admin         User     @relation("AdminSanctions", fields: [adminId], references: [id])
+}
+
+model SupportTicket {
+  id          String   @id @default(uuid())
+  userId      String
+  subject     String
+  description String
+  status      String   @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
+  priority    String   @default("NORMAL") // NORMAL, URGENT
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  type        String   // SUBSCRIPTION, CONSUMABLE
+  price       Float
+  quantity    Int?     // For consumables (e.g., 5 Super Likes)
+  duration    Int?     // For subscriptions (e.g., 30 days)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
